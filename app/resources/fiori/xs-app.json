@@ -1,0 +1,26 @@
+{
+    "welcomeFile": "index.html",
+    "authenticationMethod": "route",
+    "routes": [
+        {
+            "source": "^/catalog/(.*)$",
+            "csrfProtection": false,
+            "authenticationType": "xsuaa",
+            "scope": "$XSAPPNAME.Viewer",
+            "destination": "dest_demofiori-srv"
+        }
+        ,{
+            "source": "^/v2/catalog/(.*)$",
+            "csrfProtection": false,
+            "authenticationType": "xsuaa",
+            "scope": "$XSAPPNAME.Viewer",
+            "destination": "dest_demofiori-srv"
+        }
+        ,{
+            "source": "^/(.*)$",
+            "authenticationType": "xsuaa",
+            "scope": "$XSAPPNAME.Viewer",
+            "service": "html5-apps-repo-rt"
+        }
+    ]
+}

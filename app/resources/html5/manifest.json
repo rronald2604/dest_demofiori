@@ -1,0 +1,16 @@
+{
+    "_version": "",
+    "sap.cloud": {
+        "service": "dest_demofiori-service"
+    },
+    "sap.app": {
+        "id": "dest_demofiori-html5",
+        "type": "application",
+        "applicationVersion": {
+            "version": "0.0.1"
+        },
+        "title": "App HTML5",
+        "description": "Business Application HTML5",
+        "offline": false
+    }
+}

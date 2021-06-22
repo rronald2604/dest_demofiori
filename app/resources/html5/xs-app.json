@@ -1,0 +1,33 @@
+{
+    "welcomeFile": "index.html",
+    "authenticationMethod": "route",
+    "routes": [
+        {
+            "source": "^/catalog/(.*)$",
+            "csrfProtection": false,
+            "authenticationType": "xsuaa",
+            "scope": "$XSAPPNAME.Viewer",
+            "destination": "dest_demofiori-srv"
+        }
+        ,
+        {
+        "source": "^/user-api(.*)",
+        "target": "$1",
+        "service": "sap-approuter-userapi"
+        },
+        {
+            "source": "^/v2/catalog/(.*)$",
+            "csrfProtection": false,
+            "authenticationType": "xsuaa",
+            "scope": "$XSAPPNAME.Viewer",
+            "destination": "dest_demofiori-srv"
+        }
+        ,
+        {
+            "source": "^/(.*)$",
+            "authenticationType": "xsuaa",
+            "scope": "$XSAPPNAME.Viewer",
+            "service": "html5-apps-repo-rt"
+        }
+    ]
+}

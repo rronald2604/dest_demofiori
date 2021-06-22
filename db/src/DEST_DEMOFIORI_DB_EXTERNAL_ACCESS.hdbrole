@@ -1,0 +1,14 @@
+{
+    "role": {
+        "name": "DEST_DEMOFIORI_DB_EXTERNAL_ACCESS",
+        "object_privileges": [
+            {
+                "name": "DEST_DEMOFIORI_DB_WIDGETS",
+                "type": "TABLE",
+                "privileges": [
+                    "SELECT"
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,191 @@
+_schema-version: '3.2'
+ID: dest_demofiori
+version: 0.0.1
+
+parameters:
+  enable-parallel-deployments: true
+
+build-parameters:
+  before-all:
+    - builder: custom
+      commands:
+        - npm install --production
+        - npx -p @sap/cds-dk cds build --production
+
+modules:
+  # ---------------- DATABASE DEPLOYER MODULE ------------------
+  - name: dest_demofiori-db-deployer
+  # ------------------------------------------------------------
+    type: hdb
+    path: gen/db
+    parameters:
+      buildpack: nodejs_buildpack
+      memory: 256M
+      disk-quota: 1024M
+    requires:
+      - name: dest_demofiori-uaa
+      - name: dest_demofiori-db
+
+  # --------------------- SERVER MODULE ------------------------
+  - name: dest_demofiori-srv
+  # ------------------------------------------------------------
+    type: nodejs
+    path: gen/srv
+    parameters:
+      buildpack: nodejs_buildpack
+      memory: 512M
+      disk-quota: 1024M
+    properties:
+      ApplicationInterfaceKey: saptest0
+    requires:
+      - name: dest_demofiori-uaa
+      - name: dest_demofiori-dest
+      - name: dest_demofiori-db
+    provides:
+      - name: srv-api
+        properties:
+          srv-url: ${default-url}
+
+
+  # ----------- HTML5 APP REPOSITORY APP HTML5 MODULE ----------
+  - name: dest_demofiori-html5
+  # ------------------------------------------------------------
+    type: html5
+    path: app/resources/html5
+    build-parameters:
+      builder: custom
+      commands:
+        - npm run build
+      supported-platforms: []
+
+  # ----------- HTML5 APP REPOSITORY APP FIORI MODULE ----------
+  - name: dest_demofiori-fiori
+  # ------------------------------------------------------------
+    type: html5
+    path: app/resources/fiori
+    build-parameters:
+      builder: custom
+      commands:
+        - npm run build
+      supported-platforms: []
+
+  # ----------- HTML5 APP REPOSITORY DEPLOYER MODULE -----------
+  - name: dest_demofiori-ui-deployer
+  # ------------------------------------------------------------
+    type: com.sap.application.content
+    path: .
+    requires:
+      - name: dest_demofiori-html5repo
+        parameters:
+          content-target: true
+    build-parameters:
+      build-result: gen/app
+      requires:
+        - artifacts:
+            - html5-content.zip
+          name: dest_demofiori-html5
+          target-path: gen/app/
+        - artifacts:
+            - fiori-content.zip
+          name: dest_demofiori-fiori
+          target-path: gen/app/
+
+  # ----- HTML5 APP REPOSITORY DESTINATION CONTENT MODULE ------
+  - name: dest_demofiori-dest-content
+  # ------------------------------------------------------------
+    type: com.sap.application.content
+    requires:
+      - name: dest_demofiori-uaa
+        parameters:
+          service-key:
+            name: dest_demofiori-uaa-sk
+      - name: dest_demofiori-dest
+        parameters:
+          content-target: true
+      - name: dest_demofiori-html5repo
+        parameters:
+          service-key:
+            name: dest_demofiori-html5repo-sk
+    parameters:
+      content:
+        subaccount:
+          existing_destinations_policy: update
+          destinations:
+            - Name: dest_demofiori-service-dest_demofiori-uaa
+              ServiceInstanceName: dest_demofiori-uaa
+              ServiceKeyName: dest_demofiori-uaa-sk
+              Authentication: OAuth2UserTokenExchange
+              sap.cloud.service: dest_demofiori-service
+            - Name: dest_demofiori-service-dest_demofiori-html5repo
+              ServiceInstanceName: dest_demofiori-html5repo
+              ServiceKeyName: dest_demofiori-html5repo-sk
+              sap.cloud.service: dest_demofiori-service
+    build-parameters:
+      no-source: true
+
+resources:
+  # ----------------------- UAA SERVICE ------------------------
+  - name: dest_demofiori-uaa
+  # ------------------------------------------------------------
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: xsuaa
+      service-plan: application
+      path: ./xs-security.json
+
+  # -------------------- DESTINATION SERVICE -------------------
+  - name: dest_demofiori-dest
+  # ------------------------------------------------------------
+    type: org.cloudfoundry.managed-service
+    requires:
+      - name: srv-api
+    parameters:
+      service: destination
+      service-plan: lite
+      config:
+        HTML5Runtime_enabled: true
+        init_data:
+          subaccount:
+            existing_destinations_policy: update
+            destinations:
+              - Name: dest_demofiori-API_SALES_ORDER_SRV
+                Description: SAP S/4HANA Cloud Sales Order (A2X)
+                URL: https://sandbox.api.sap.com
+                Type: HTTP
+                ProxyType: Internet
+                Authentication: NoAuthentication
+                HTML5.DynamicDestination: true
+              - Name: dest_demofiori-srv
+                Description: App - Server Module
+                URL: ~{srv-api/srv-url}
+                Type: HTTP
+                ProxyType: Internet
+                Authentication: NoAuthentication
+                HTML5.DynamicDestination: true
+                HTML5.ForwardAuthToken: true
+
+  # ----------- HTML5 APP REPOSITORY HOSTING SERVICE -----------
+  - name: dest_demofiori-html5repo
+  # ------------------------------------------------------------
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-plan: app-host
+
+
+
+
+  # ------------------- HDI CONTAINER SERVICE ------------------
+  - name: dest_demofiori-db
+  # ------------------------------------------------------------
+    type: com.sap.xs.hdi-container
+    parameters:
+      service: hana
+      service-plan: hdi-shared
+    properties:
+      hdi-service-name: ${service-name}
+
+
+
+
+
